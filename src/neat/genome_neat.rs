@@ -139,11 +139,11 @@ pub(super) struct GenomeMutator {}
 
 impl GenomeMutator {
     pub(crate) fn mutate_random(neat: &mut Neat, genome: &mut Genome) {
-        if (0..neat.mutate_chance_add_node).choose(&mut neat.cached_rng) == Some(1) { GenomeMutator::mutate_add_node(neat, genome); }
-        if (0..neat.mutate_chance_add_connection).choose(&mut neat.cached_rng) == Some(1) { GenomeMutator::mutate_add_connection(neat, genome); }
-        if (0..neat.mutate_chance_random_weight).choose(&mut neat.cached_rng) == Some(1) { GenomeMutator::mutate_random_weight(neat, genome); }
-        if (0..neat.mutate_chance_weight_shift).choose(&mut neat.cached_rng) == Some(1) { GenomeMutator::mutate_weight_shift(neat, genome); }
-        if (0..neat.mutate_chance_toggle_connection).choose(&mut neat.cached_rng) == Some(1) { GenomeMutator::mutate_toggle_connection(neat, genome); }
+        if (0..neat.mutate_chance_add_node).choose(&mut neat.cached_rng) == Some(0) { GenomeMutator::mutate_add_node(neat, genome); }
+        if (0..neat.mutate_chance_add_connection).choose(&mut neat.cached_rng) == Some(0) { GenomeMutator::mutate_add_connection(neat, genome); }
+        if (0..neat.mutate_chance_random_weight).choose(&mut neat.cached_rng) == Some(0) { GenomeMutator::mutate_random_weight(neat, genome); }
+        if (0..neat.mutate_chance_weight_shift).choose(&mut neat.cached_rng) == Some(0) { GenomeMutator::mutate_weight_shift(neat, genome); }
+        if (0..neat.mutate_chance_toggle_connection).choose(&mut neat.cached_rng) == Some(0) { GenomeMutator::mutate_toggle_connection(neat, genome); }
 
     }
 
