@@ -41,6 +41,13 @@ pub struct Neat {
     mutate_chance_random_weight: u64,
     mutate_chance_weight_shift: u64,
     mutate_chance_toggle_connection: u64,
+    //distance constants
+    C1: f64,
+    C2: f64,
+    C3: f64,
+    random_weight_max: f64,
+    random_weight_shift_max: f64,
+    max_mutation_attempts: u64,
 
     node_bank: HashMap<usize, Rc<NodeGene>>, //for making sure nodes with same inv_num always refers to same node
     nodes_to_connection_map: HashMap<(usize, usize), usize>, //(node0_inv_num, node1_inv_num) -> connection_inv_num
@@ -61,7 +68,11 @@ impl Neat {
                mutate_chance_random_weight: u64,
                mutate_chance_weight_shift: u64,
                mutate_chance_toggle_connection: u64,
-               proportion_to_kill: f64,) -> Self {
+               proportion_to_kill: f64, C1: f64,
+               C2: f64, C3: f64,
+               random_weight_max: f64,
+               random_weight_shift_max: f64,
+               max_mutation_attempts: u64,) -> Self {
         let input_size = input_size+1; //add bias node
 
         let mut neat = Neat {
@@ -77,6 +88,13 @@ impl Neat {
             mutate_chance_random_weight,
             mutate_chance_weight_shift,
             mutate_chance_toggle_connection,
+
+            C1,
+            C2,
+            C3,
+            random_weight_max,
+            random_weight_shift_max,
+            max_mutation_attempts,
 
             node_bank: Default::default(),
             nodes_to_connection_map: Default::default(),
@@ -390,8 +408,7 @@ impl Neat {
     }
 
     fn get_distance_constants(&self) -> (f64,f64,f64) {
-        (0.1, 0.1, 0.1) //maybe move this to a constant file or something idk
-        //TODO
+        (self.C1, self.C2, self.C3) //maybe move this to a constant file or something idk
     }
 
     fn get_species_distance_threshold(&self) -> f64 {
@@ -399,14 +416,14 @@ impl Neat {
     }
 
     fn get_random_weight_max(&self) -> f64 {
-        10.0
+        self.random_weight_max
     }
 
     fn get_random_weight_shift_max(&self) -> f64 {
-        50.0
+        self.random_weight_shift_max
     }
 
     fn get_max_mutation_attempts(&self) -> u64 {
-        100
+        self.max_mutation_attempts
     }
 }

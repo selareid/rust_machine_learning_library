@@ -8,8 +8,9 @@ use crate::feed_forward::connection_gene::ConnectionGene;
 use crate::activation_functions::ActivationFunctions;
 
 fn get_neat_for_tests() -> Neat {
-    Neat::new(5, 2, ActivationFunctions::identity, 0.0,
-              0, 0, 0, 0, 0, 0.0)
+    Neat::new(5, 2, ActivationFunctions::identity, 0.0, 0, 0,
+              0, 0, 0, 0.0,
+              0.1, 0.1, 0.1, 10.0, 50.0, 100)
 }
 fn get_basic_genome_for_test_using_neat(neat: &mut Neat) -> Genome {
     //create genome
