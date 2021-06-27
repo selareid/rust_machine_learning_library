@@ -1,4 +1,4 @@
-pub(crate) struct ActivationFunctions {}
+pub struct ActivationFunctions {}
 
 struct DerivativeFunctions {}
 
