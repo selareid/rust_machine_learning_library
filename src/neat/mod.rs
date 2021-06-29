@@ -140,9 +140,9 @@ impl Neat {
     }
 
     //run the client's calculator
-    pub fn use_client(&self, client_name: String, inputs: &Vec<f64>) -> Vec<f64> {
+    pub fn use_client(&self, client_name: &String, inputs: &Vec<f64>) -> Vec<f64> {
         assert_eq!(inputs.len(), self.num_of_input_nodes-1);
-        match self.clients.get(&client_name) {
+        match self.clients.get(client_name) {
             None => panic!("Illegal moment, client with name {} does not exist", client_name),
             Some(client_ref) => {
                 let mut inputs_with_bias: Vec<f64> = vec![1.0];
@@ -152,8 +152,8 @@ impl Neat {
         }
     }
 
-    pub fn score_client(&self, client_name: String, score: f64) {
-        match self.clients.get(&client_name) {
+    pub fn score_client(&self, client_name: &String, score: f64) {
+        match self.clients.get(client_name) {
             None => panic!("Whoa, client with name {} doesn't exist", client_name),
             Some(client_ref) => {
                 client_ref.borrow_mut().set_score(score);
