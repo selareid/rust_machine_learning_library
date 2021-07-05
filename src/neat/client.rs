@@ -97,7 +97,7 @@ impl Client {
 
 impl PartialEq for Client {
     fn eq(&self, other: &Self) -> bool {
-        todo!()
+        self.name == other.name && self.score == other.score && Rc::ptr_eq(&self.genome, &other.genome) && Rc::ptr_eq(&self.species, &other.species)
     }
 }
 
