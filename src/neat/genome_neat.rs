@@ -33,22 +33,28 @@ impl GenomeNeatMethods {
 
         //count
         while index_g0 < g0.connections.len() && index_g1 < g1.connections.len() {
-            if let Some(connection_g0) = g0.connections.get(&index_g0) {
-                if let Some(connection_g1) = g1.connections.get(&index_g1) {
-                    if connection_g0.get_innovation_number() == connection_g1.get_innovation_number() { //similar gene
-                        //update counts
-                        similar += 1;
-                        weight_diff += (connection_g0.weight - connection_g1.weight).abs();
-                        //increase indices
-                        index_g0 += 1;
-                        index_g1 += 1;
-                    } else if connection_g0.get_innovation_number() > connection_g1.get_innovation_number() { //disjoint gene of b
-                        disjoint += 1; //update count
-                        index_g1 += 1; //increase lower index
-                    } else { //disjoint of a
-                        disjoint += 1; //update count
-                        index_g0 += 1; //increase lower index
-                    }
+            if let (Some(connection_g0), Some(connection_g1)) = (g0.connections.get(&index_g0), g1.connections.get(&index_g1)) {
+                if connection_g0.get_innovation_number() == connection_g1.get_innovation_number() { //similar gene
+                    //update counts
+                    similar += 1;
+                    weight_diff += (connection_g0.weight - connection_g1.weight).abs();
+                    //increase indices
+                    index_g0 += 1;
+                    index_g1 += 1;
+                } else if connection_g0.get_innovation_number() > connection_g1.get_innovation_number() { //disjoint gene of b
+                    disjoint += 1; //update count
+                    index_g1 += 1; //increase lower index
+                } else { //disjoint of a
+                    disjoint += 1; //update count
+                    index_g0 += 1; //increase lower index
+                }
+            }
+            else {
+                if let None = g0.connections.get(&index_g0) {
+                    index_g0 += 1;
+                }
+                if let None = g1.connections.get(&index_g1) {
+                    index_g1 += 1;
                 }
             }
         }
@@ -102,6 +108,12 @@ impl GenomeNeatMethods {
                         new_genome.connections.insert(connection_g0.get_innovation_number(), ConnectionGene::clone(connection_g0));
                     }
                 }
+                else {
+                    index_g1 += 1;
+                }
+            }
+            else {
+                index_g0 += 1;
             }
         }
 
@@ -109,13 +121,12 @@ impl GenomeNeatMethods {
         while index_g0 < genome0.connections.len() {
             if let Some(connection_g0) = genome0.connections.get(&index_g0) {
                 new_genome.add_connection(ConnectionGene::clone(connection_g0));
-                index_g0 += 1;
             }
+            index_g0 += 1;
         }
 
         //fill out the nodes in the new genome
-        let mut index_in_new: usize = 0;
-        while index_in_new < new_genome.connections.len() {
+        for index_in_new in new_genome.connections.keys().map(|key| *key).collect::<Vec<usize>>() {
             if let Some(connection) = new_genome.connections.get(&index_in_new) {
                 let (from_node, to_node) = (Rc::clone(&connection.from), Rc::clone(&connection.to));
 
@@ -124,11 +135,7 @@ impl GenomeNeatMethods {
 
                 //handle to node
                 new_genome.add_node(to_node);
-            } else {
-                panic!("This shouldn't happen I think");
             }
-
-            index_in_new += 1;
         }
 
         new_genome
@@ -145,6 +152,14 @@ impl GenomeMutator {
         if (0..neat.mutate_chance_weight_shift).choose(&mut neat.cached_rng) == Some(0) { GenomeMutator::mutate_weight_shift(neat, genome); }
         if (0..neat.mutate_chance_toggle_connection).choose(&mut neat.cached_rng) == Some(0) { GenomeMutator::mutate_toggle_connection(neat, genome); }
 
+    }
+
+    pub(crate) fn mutate_full(neat: &mut Neat, genome: &mut Genome) {
+        GenomeMutator::mutate_add_node(neat, genome);
+        GenomeMutator::mutate_add_connection(neat, genome);
+        GenomeMutator::mutate_random_weight(neat, genome);
+        GenomeMutator::mutate_weight_shift(neat, genome);
+        GenomeMutator::mutate_toggle_connection(neat, genome);
     }
 
     pub(super) fn mutate_add_node(neat: &mut Neat, genome: &mut Genome) -> bool {
@@ -256,7 +271,7 @@ impl GenomeMutator {
         while {
             i += 1;
             if i > neat.get_max_mutation_attempts() {
-                panic!("uhhhh fix your code bro");
+                return false
             }
 
             //gets random connection key

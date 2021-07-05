@@ -162,6 +162,8 @@ impl Neat {
     }
 
     pub fn update_clients(&mut self) {
+        // println!("starting client updates...");
+
         /*
         evaluate species
         kill low species
@@ -192,7 +194,7 @@ impl Neat {
                         let mut species = ref_copy.borrow_mut();
                         species.cull(self.proportion_to_kill, &self.get_default_species());
 
-                        if species.size() == 1 { //remove empty species
+                        if species.size() <= 1 { //remove empty species
                             species.go_extinct(&self.get_default_species());
                             self.species.remove(name);
                         }
@@ -207,27 +209,32 @@ impl Neat {
             breed from randos in that species
             coolio
         */
-        {
-            //killed clients - don't have species
-            let mut def_spec = self.default_species.borrow_mut();
-            let clients: &mut RandomHashSet<RefCell<Client>> = def_spec.get_clients_mut();
-            let mut rng = rand::thread_rng();
+        if self.species.len() > 0 { //skip if no species yet
+            {
+                //killed clients - don't have species
+                let mut def_spec = self.default_species.borrow_mut();
+                let clients: &mut RandomHashSet<RefCell<Client>> = def_spec.get_clients_mut();
+                let mut rng = rand::thread_rng();
 
-            //randomly add those clients to a random species
-            // - replaces client's genome with one made from breeding clients in the new species
-            for client in clients.get_data() {
-                match self.species.values().choose(&mut rng) {
-                    None => panic!("woops, no species - did we kill them all??"),
-                    Some(chosen_species) => {
-                        let mut species = chosen_species.borrow_mut();
+                //randomly add those clients to a random species
+                // - replaces client's genome with one made from breeding clients in the new species
+                for client in clients.get_data() {
+                    match self.species.values().choose(&mut rng) {
+                        None => panic!("woops, no species - did we kill them all??"),
+                        Some(chosen_species) => {
+                            let mut species = chosen_species.borrow_mut();
 
-                        client.borrow_mut().set_genome(Rc::new(RefCell::new(species.breed_random_clients()))); //gives client new genome
-                        species.force_put(Rc::clone(client), Rc::clone(chosen_species)); // add client to the species
+                            assert!(species.size() > 0);
+
+                            let new_genome = species.breed_random_clients();
+                            client.borrow_mut().set_genome(Rc::new(RefCell::new(new_genome))); //gives client new genome
+                            species.force_put(Rc::clone(client), Rc::clone(chosen_species)); // add client to the species
+                        }
                     }
                 }
-            }
 
-            clients.clear(); //all the clients have been moved on their end
+                clients.clear(); //all the clients have been moved on their end
+            }
 
             assert_eq!(self.get_default_species().borrow().size(), 0);
         }
@@ -249,13 +256,14 @@ impl Neat {
 
             for name in client_names {
                 let client_ref = match self.clients.get(&name) {
-                    None => continue,
+                    None => panic!("This shouldn't happen"),
                     Some(client_ref_i) => Rc::clone(client_ref_i),
                 };
 
-                let mut client = client_ref.borrow_mut();
+                self.get_default_species().borrow_mut().force_put(Rc::clone(&client_ref), self.get_default_species());
 
-                client.reset_client(self.get_default_species());
+                let mut client = client_ref.borrow_mut();
+                client.reset_client();
 
                 //mutates genome
                 let genome = client.get_genome();
@@ -271,6 +279,8 @@ impl Neat {
         sort clients into species
         */
         self.sort_clients_into_species();
+
+        // println!("finished client updates {:?}", self.species.iter().map(|(a,b)| format!("{} {}", a, b.borrow().size())).collect::<Vec<String>>());
     }
 
     fn sort_clients_into_species(&mut self) {
@@ -301,12 +311,12 @@ impl Neat {
             //otherwise make new species
             let species = Species::new();
             assert_eq!(species.size(), 0);
-
             let species_ref = Rc::new(RefCell::new(species));
             //add client to species
             Rc::clone(&species_ref).borrow_mut().try_add_client(Rc::clone(client_ref), Rc::clone(&species_ref),
                                                                 self.get_distance_constants(), self.get_species_distance_threshold());
-            new_species.push(species_ref);
+            new_species.push(Rc::clone(&species_ref));
+            self.species.insert(String::clone(Rc::clone(&species_ref).borrow().get_name()), species_ref);
         }
     }
 
@@ -318,7 +328,7 @@ impl Neat {
             match self.get_node_by_inv_num(i) {
                 None => break,
                 Some(node) => {
-                    if node.get_x() != 0.1 || node.get_x() != 0.9 { break; }
+                    if node.get_x() != 0.1 && node.get_x() != 0.9 { break; }
 
                     genome.add_node(node);
                 }
@@ -333,7 +343,7 @@ impl Neat {
             }
         }
 
-        GenomeMutator::mutate_random(self, &mut genome);
+        GenomeMutator::mutate_full(self, &mut genome);
         genome
     }
 
@@ -377,7 +387,9 @@ impl Neat {
             None => { //get new node
                 let x = ( connection.to.get_x() + connection.from.get_x() ) / 2.0;
                 let y = ( connection.to.get_y() + connection.from.get_y() ) / 2.0;
-                self.get_new_node_from_xy(x, y)
+                let con = self.get_new_node_from_xy(x, y);
+                self.connection_to_replacement_node_map.insert(connection.get_innovation_number(), con.get_innovation_number());
+                con
             },
             Some(node_num) => Rc::clone(self.node_bank.get(node_num).unwrap())
         };
@@ -425,5 +437,25 @@ impl Neat {
 
     fn get_max_mutation_attempts(&self) -> u64 {
         self.max_mutation_attempts
+    }
+
+    pub fn get_number_of_species(&self) -> usize {
+        self.species.len()
+    }
+
+    pub fn get_number_of_clients(&self) -> usize {
+        self.clients.len()
+    }
+
+    pub fn display_genome(&self, client_name: &String) {
+        if let Some(client_ref) = self.clients.get(client_name) {
+            let client = client_ref.borrow();
+            let genome_ref = client.get_genome();
+            let genome = genome_ref.borrow();
+            println!("{:?}", genome.connections);
+        }
+        else {
+            panic!("Bad client")
+        }
     }
 }
