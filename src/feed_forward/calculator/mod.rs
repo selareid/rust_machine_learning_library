@@ -63,12 +63,12 @@ impl<F> Calculator<F> where
             }
 
             let from_node: &Rc<RefCell<Node>> = match node_hash_map.get(&genome_connection.from.get_innovation_number()) {
-                None => panic!(),
+                None => panic!("Failed to get node with inv number {} from node_hash_map", &genome_connection.from.get_innovation_number()),
                 Some(node) => node
             };
 
             let to_node: &Rc<RefCell<Node>> = match node_hash_map.get(&genome_connection.to.get_innovation_number()) {
-                None => panic!(),
+                None => panic!("Failed to get node with inv number {} from node_hash_map {:?}", &genome_connection.to.get_innovation_number(), node_hash_map.keys()),
                 Some(node) => node
             };
 
