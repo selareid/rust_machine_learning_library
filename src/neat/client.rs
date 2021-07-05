@@ -89,10 +89,9 @@ impl Client {
     }
 
     //resets the client to a 'start of run' state
-    pub(super) fn reset_client(&mut self, default_species: Rc<RefCell<Species>>) {
+    pub(super) fn reset_client(&mut self) {
         self.score = 0.0;
         self.calculator = None;
-        self.set_species(default_species);
     }
 }
 
