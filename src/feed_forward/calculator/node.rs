@@ -24,23 +24,14 @@ impl Node {
 
     pub(super) fn get_output<F>(&self, activation_function: F) -> f64 where
         F: Fn(f64) -> f64 {
-        let mut total_in: f64 = 0.0;
-
-        for connection_rc in self.connections.get_data() {
-            let node_from = &connection_rc.node.borrow();
-
-            if let None = node_from.output {
-                panic!("ERROR, no output in input node - illegal for this basic feed-forward network");
-            }
-
-            let connection_weight = connection_rc.weight;
-            let value = node_from.output.unwrap() * connection_weight;
-
-            total_in += value; // add weighted output to total_ins
-        }
-
-        let pre_activated_output = total_in;
+        let pre_activated_output = self.get_total_in_from_connections();
         return activation_function(pre_activated_output); // return activated output
+    }
+
+    fn get_total_in_from_connections(&self) -> f64 {
+        let mut total_in: f64 = 0.0;
+        for connection in self.connections.get_data() { total_in += connection.get_weighted_connection_value(); }
+        total_in
     }
 
     //for setting the input nodes' values
@@ -69,15 +60,7 @@ impl PartialOrd for Node {
 
 impl Ord for Node {
     fn cmp(&self, other: &Self) -> Ordering {
-        if self.x > other.x {
-            Ordering::Greater
-        }
-        else if self.x < other.x {
-            Ordering::Less
-        }
-        else {
-            Ordering::Equal
-        }
+        if self.x > other.x { Ordering::Greater } else if self.x < other.x { Ordering::Less } else { Ordering::Equal }
     }
 }
 
