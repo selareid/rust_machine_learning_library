@@ -1,6 +1,8 @@
 use crate::random_hash_set::RandomHashSet;
 use super::connection::Connection;
 use std::cmp::Ordering;
+use std::rc::Rc;
+use std::cell::RefCell;
 
 pub struct Node {
     pub(super) connections: RandomHashSet<Connection>,
@@ -9,18 +11,18 @@ pub struct Node {
 }
 
 impl Node {
-    pub fn new(x: f64) -> Self {
+    pub(super) fn new(x: f64) -> Self {
         Node {connections: RandomHashSet::new(), output: None, x}
     }
 
     // goes over connections and processes from_node's output with connection weight,
     // averages this, then yeets through activation function
-    pub fn run_node<F>(&mut self, activation_function: F) where
+    pub(super) fn run_node<F>(&mut self, activation_function: F) where
         F: Fn(f64) -> f64 {
         self.output = Some(self.get_output(activation_function)); // gets output, saves
     }
 
-    pub fn get_output<F>(&self, activation_function: F) -> f64 where
+    pub(super) fn get_output<F>(&self, activation_function: F) -> f64 where
         F: Fn(f64) -> f64 {
         let mut total_in: f64 = 0.0;
 
@@ -42,8 +44,12 @@ impl Node {
     }
 
     //for setting the input nodes' values
-    pub fn set_output(&mut self, output: Option<f64>) {
+    pub(super) fn set_output(&mut self, output: Option<f64>) {
         self.output = output;
+    }
+
+    pub(super) fn new_node_ref_with_refcell_from_x(x: f64) -> Rc<RefCell<Node>> {
+        Rc::new(RefCell::new(Node::new(x)))
     }
 }
 
