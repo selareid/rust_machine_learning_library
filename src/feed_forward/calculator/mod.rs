@@ -44,11 +44,11 @@ impl<F> Calculator<F> where
 
     pub fn new(genome: &Genome, activation_function: F) -> Self {
         let mut new_calculator = Self::new_with_defaults(activation_function);
-        Self::add_genome_data_to_calculator(&mut new_calculator, genome);
+        new_calculator.add_genome_data_to_calculator(genome);
         new_calculator
     }
 
-    fn add_genome_data_to_calculator(mut new_calculator: &mut Calculator<F>, genome: &Genome) {
+    fn add_genome_data_to_calculator(&mut self, genome: &Genome) {
         let mut node_innovation_num_to_ref: HashMap<usize, Rc<RefCell<Node>>> = HashMap::new(); //so that the same nodes are the same (not copies/clones)
 
         //start of node stuffs
@@ -56,29 +56,29 @@ impl<F> Calculator<F> where
             let node: Rc<RefCell<Node>> = Node::new_node_ref_with_refcell_from_x(genome_node.get_x());
 
             node_innovation_num_to_ref.insert(genome_node.get_innovation_number(), Rc::clone(&node));
-            new_calculator.add_node_to_calculator(node, genome_node.get_innovation_number());
+            self.add_node_to_calculator(node, genome_node.get_innovation_number());
         }
 
         //start of connections stuff
         for (_key, genome_connection) in &genome.connections {
             if !genome_connection.enabled { continue; }
 
-            Self::add_connection_from_gene(&mut node_innovation_num_to_ref, genome_connection);
+            Self::add_connection_to_nodes_from_gene(&mut node_innovation_num_to_ref, genome_connection);
         }
 
-        new_calculator.hidden_nodes.sort_unstable();
+        self.hidden_nodes.sort_unstable();
     }
 
-    fn add_connection_from_gene(mut node_innovation_num_to_ref: &mut HashMap<usize, Rc<RefCell<Node>>>, connection_gene: &ConnectionGene) {
-        let (from_node, to_node) = get_node_refs_from_connection_gene(&mut node_innovation_num_to_ref, &connection_gene);
+    fn add_connection_to_nodes_from_gene(mut node_innovation_num_to_ref_map: &mut HashMap<usize, Rc<RefCell<Node>>>, connection_gene: &ConnectionGene) {
+        let (from_node, to_node) = get_node_refs_from_connection_gene(&mut node_innovation_num_to_ref_map, &connection_gene);
 
         let new_connection: Connection = Connection::new(connection_gene.weight, from_node);
 
         &mut to_node.borrow_mut().connections.push(Rc::new(new_connection));
     }
 
-    fn add_node_to_calculator(&mut self, node: Rc<RefCell<Node>>, innovation_number: usize) {
-        let node_x: f64 = node.borrow().x;
+    fn add_node_to_calculator(&mut self, node_ref: Rc<RefCell<Node>>, innovation_number: usize) {
+        let node_x: f64 = node_ref.borrow().x;
 
         let is_hidden_node: bool = node_x > 0.1 && node_x < 0.9;
         if !is_hidden_node {
@@ -86,7 +86,7 @@ impl<F> Calculator<F> where
             self.get_node_to_position_map_from_x_mut(node_x).insert(innovation_number, node_vector_length);
         }
 
-        self.get_node_vector_from_x_mut(node_x).push(node);
+        self.get_node_vector_from_x_mut(node_x).push(node_ref);
     }
 
     fn get_node_vector_from_x_mut(&mut self, node_x: f64) -> &mut Vec<Rc<RefCell<Node>>> {
