@@ -54,7 +54,6 @@ impl Species {
             self.force_put(client, species_ref);
             return true;
         }
-
         false
     }
 
@@ -138,22 +137,16 @@ impl Species {
         let mut random_client1_ref: Rc<RefCell<Client>>;
         let mut random_client2_ref: Rc<RefCell<Client>>;
 
-        loop {
-            if let Some(ran_1) = self.clients.random_element() {
-                random_client1_ref = Rc::clone(ran_1);
-            } else {
-                panic!("Didn't get element");
-            }
+        if let Some(ran_1) = self.clients.random_element() {
+            random_client1_ref = Rc::clone(ran_1);
+        } else {
+            panic!("Didn't get element");
+        }
 
-            if let Some(ran_2) = self.clients.random_element() {
-                random_client2_ref = Rc::clone(ran_2);
-            } else {
-                panic!("Didn't get element");
-            }
-
-            if !Rc::ptr_eq(&random_client1_ref, &random_client2_ref) {
-                break;
-            }
+        if let Some(ran_2) = self.clients.random_element() {
+            random_client2_ref = Rc::clone(ran_2);
+        } else {
+            panic!("Didn't get element");
         }
 
         let random_client1 = random_client1_ref.borrow();

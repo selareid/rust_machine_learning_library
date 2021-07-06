@@ -32,4 +32,6 @@ impl ActivationFunctions {
     pub fn softplus(input: f64) -> f64 {
         (1.0 + input.exp()).ln()
     }
+
+    pub fn tanh(input: f64) -> f64 { (input).tanh() } //TODO
 }

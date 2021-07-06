@@ -74,11 +74,23 @@ impl<F> Calculator<F> where
 
         let new_connection: Connection = Connection::new(connection_gene.weight, from_node);
 
+<<<<<<< HEAD
         &mut to_node.borrow_mut().connections.push(Rc::new(new_connection));
     }
 
     fn add_node_to_calculator(&mut self, node: Rc<RefCell<Node>>, innovation_number: usize) {
         let node_x: f64 = node.borrow().x;
+=======
+            let from_node: &Rc<RefCell<Node>> = match node_hash_map.get(&genome_connection.from.get_innovation_number()) {
+                None => panic!("Failed to get node with inv number {} from node_hash_map", &genome_connection.from.get_innovation_number()),
+                Some(node) => node
+            };
+
+            let to_node: &Rc<RefCell<Node>> = match node_hash_map.get(&genome_connection.to.get_innovation_number()) {
+                None => panic!("Failed to get node with inv number {} from node_hash_map {:?}", &genome_connection.to.get_innovation_number(), node_hash_map.keys()),
+                Some(node) => node
+            };
+>>>>>>> dc4fe4349f480cb53e90752ea613141c83751c20
 
         let is_hidden_node: bool = node_x > 0.1 && node_x < 0.9;
         if !is_hidden_node {
@@ -159,12 +171,12 @@ impl<F> Calculator<F> where
 
 fn get_node_refs_from_connection_gene(node_innovation_num_to_ref: &mut HashMap<usize, Rc<RefCell<Node>>>, connection_gene: &&ConnectionGene) -> (Rc<RefCell<Node>>, Rc<RefCell<Node>>) {
     let from_node: Rc<RefCell<Node>> = match node_innovation_num_to_ref.get(&connection_gene.from.get_innovation_number()) {
-        None => panic!(),
+        None => panic!("Failed to get node with inv number {} from node_hash_map", &genome_connection.from.get_innovation_number()),
         Some(node) => Rc::clone(node)
     };
 
     let to_node: Rc<RefCell<Node>> = match node_innovation_num_to_ref.get(&connection_gene.to.get_innovation_number()) {
-        None => panic!(),
+        None => panic!("Failed to get node with inv number {} from node_hash_map {:?}", &genome_connection.to.get_innovation_number(), node_hash_map.keys()),
         Some(node) => Rc::clone(node)
     };
 
