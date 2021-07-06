@@ -203,6 +203,7 @@ mod tests {
     use super::*;
 
     #[test]
+    #[ignore]
     fn test_new_species() {
         let s: Species = Species::new();
         println!("Species name: {}", s.name);

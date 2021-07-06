@@ -65,6 +65,7 @@ fn get_basic_genome_for_test_using_neat(neat: &mut Neat) -> Genome {
 //TODO note - could implement (count key different) for testing - maybe use a macro and accept closure with some stuff to do on-loop
 
 #[test]
+#[ignore]
 fn test_distance_function() {
     todo!()
 }
