@@ -150,9 +150,9 @@ impl<F> Calculator<F> where
         for i in (self.input_nodes.len()..).take(self.output_nodes.len()) {
             let node_position = self.output_inv_to_position.get(&i).unwrap();
             let node_rc: &Rc<RefCell<Node>> = &self.output_nodes[*node_position];
-            let node_output = node_rc.borrow().get_output(&self.activation_function);
+            node_rc.borrow_mut().run_node(&self.activation_function);
 
-            outputs.push(node_output);
+            outputs.push(node_rc.borrow().output.unwrap());
         }
     }
 }

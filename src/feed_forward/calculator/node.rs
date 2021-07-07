@@ -19,10 +19,10 @@ impl Node {
     // averages this, then yeets through activation function
     pub(super) fn run_node<F>(&mut self, activation_function: F) where
         F: Fn(f64) -> f64 {
-        self.output = Some(self.get_output(activation_function)); // gets output, saves
+        self.output = Some(self.get_activated_output(activation_function)); // gets output, saves
     }
 
-    pub(super) fn get_output<F>(&self, activation_function: F) -> f64 where
+    fn get_activated_output<F>(&self, activation_function: F) -> f64 where
         F: Fn(f64) -> f64 {
         let pre_activated_output = self.get_total_in_from_connections();
         return activation_function(pre_activated_output); // return activated output
