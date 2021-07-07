@@ -3,7 +3,3 @@ pub trait Gene {
 
     fn set_innovation_number(&mut self, innovation_number: usize);
 }
-//
-// pub enum InnovationNumber {
-//     InnovationNumber(usize)
-// }
