@@ -155,23 +155,18 @@ impl Neat {
 
     //run the client's calculator
     pub fn use_client(&self, client_name: &String, inputs: &Vec<f64>) -> Vec<f64> {
-        match self.clients.get(client_name) {
-            None => panic!("Illegal moment, client with name {} does not exist", client_name),
-            Some(client_ref) => {
-                let mut inputs_with_bias: Vec<f64> = vec![1.0];
-                inputs_with_bias.extend(inputs);
-                client_ref.borrow().use_calculator(&inputs_with_bias)
-            },
-        }
+        let client = self.get_client_ref(client_name).borrow();
+        client.use_calculator(&Neat::get_input_with_bias(inputs))
+    }
+
+    fn get_input_with_bias(inputs: &Vec<f64>) -> Vec<f64> {
+        let mut inputs_with_bias: Vec<f64> = vec![1.0];
+        inputs_with_bias.extend(inputs);
+        inputs_with_bias
     }
 
     pub fn score_client(&self, client_name: &String, score: f64) {
-        match self.clients.get(client_name) {
-            None => panic!("Whoa, client with name {} doesn't exist", client_name),
-            Some(client_ref) => {
-                client_ref.borrow_mut().set_score(score);
-            },
-        }
+        self.get_client_ref(client_name).borrow_mut().set_score(score);
     }
 
     pub fn update_clients(&mut self) {
@@ -268,10 +263,7 @@ impl Neat {
             }
 
             for name in client_names {
-                let client_ref = match self.clients.get(&name) {
-                    None => panic!("This shouldn't happen"),
-                    Some(client_ref_i) => Rc::clone(client_ref_i),
-                };
+                let client_ref = Rc::clone(self.get_client_ref(&name));
 
                 self.get_default_species().borrow_mut().force_put(Rc::clone(&client_ref), self.get_default_species());
 
@@ -294,6 +286,13 @@ impl Neat {
         self.sort_clients_into_species();
 
         // println!("finished client updates {:?}", self.species.iter().map(|(a,b)| format!("{} {}", a, b.borrow().size())).collect::<Vec<String>>());
+    }
+
+    fn get_client_ref(&self, client_name: &String) -> &Rc<RefCell<Client>> {
+        match self.clients.get(client_name) {
+            None => panic!("Illegal moment, client with name {} does not exist", client_name),
+            Some(client_ref) => client_ref,
+        }
     }
 
     fn sort_clients_into_species(&mut self) {
@@ -461,14 +460,9 @@ impl Neat {
     }
 
     pub fn display_genome(&self, client_name: &String) {
-        if let Some(client_ref) = self.clients.get(client_name) {
-            let client = client_ref.borrow();
-            let genome_ref = client.get_genome();
-            let genome = genome_ref.borrow();
-            println!("{:?}", genome.connections);
-        }
-        else {
-            panic!("Bad client")
-        }
+        let client = self.get_client_ref(client_name).borrow();
+        let genome_ref = client.get_genome();
+        let genome = genome_ref.borrow();
+        println!("{:?}", genome.connections);
     }
 }
