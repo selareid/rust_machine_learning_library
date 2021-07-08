@@ -73,7 +73,7 @@ impl Neat {
                random_weight_max: f64,
                random_weight_shift_max: f64,
                max_mutation_attempts: u64,) -> Self {
-        let input_size = input_size+1; //add bias node
+        let input_size = input_size+1; //for the bias node
 
         let mut neat = Neat {
             species: Default::default(),
@@ -105,15 +105,29 @@ impl Neat {
             cached_rng: rand::thread_rng(),
         };
 
-        //we add a node (node0) as the bias
-        for i in 0..input_size {
-            neat.get_new_node_from_xy(0.1, (i / input_size) as f64);
-        }
-        for i in 0..output_size {
-            neat.get_new_node_from_xy(0.9, (i / output_size) as f64);
-        }
+        neat.add_nodes_for_new_neat();
 
         neat
+    }
+
+    fn add_nodes_for_new_neat(&mut self) {
+        for i in 0..self.num_of_input_nodes {
+            let y = (i / self.num_of_input_nodes) as f64;
+            self.add_input_node(y);
+        }
+
+        for i in 0..self.num_of_output_nodes {
+            let y = (i / self.num_of_output_nodes) as f64;
+            self.add_output_node(y);
+        }
+    }
+
+    fn add_output_node(&mut self, y: f64) {
+        self.get_new_node_from_xy(0.9, y);
+    }
+
+    fn add_input_node(&mut self, y: f64) {
+        self.get_new_node_from_xy(0.1, y);
     }
 
     //creates new client, adds to default species
