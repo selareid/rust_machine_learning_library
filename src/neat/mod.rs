@@ -138,17 +138,17 @@ impl Neat {
         let mut client = Client::new(Rc::new(RefCell::new(self.get_default_genome())),
                                  self.get_default_species(),
                                  );
-        //update calculator
+        //generate calculator
         client.generate_calculator(self.activation_function);
 
         let name = String::clone(client.get_name());
-
         let client_ref = Rc::new(RefCell::new(client));
 
+        //add client to default species
         self.get_default_species().borrow_mut().force_put(Rc::clone(&client_ref), self.get_default_species());
 
+        //add client to clients
         self.clients.insert(String::clone(&name), client_ref);
-
 
         name
     }
