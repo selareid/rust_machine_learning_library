@@ -63,8 +63,15 @@ impl Species {
         self.clients.push(client);
     }
 
+    pub(super) fn breed_client_into_species(&mut self, client: Rc<RefCell<Client>>, species_ref: Rc<RefCell<Species>>) {
+        let new_genome_ref = Rc::new(RefCell::new(self.breed_random_clients()));
+        client.borrow_mut().set_genome(new_genome_ref);
+
+        self.force_put(client, species_ref);
+    }
+
     // MAKE SURE YOU DELETE THE SPECIES AFTER RUNNING THIS
-    pub(super) fn go_extinct(&mut self, default_species: &Rc<RefCell<Species>>) {
+    pub(super) fn go_extinct_move_clients_to_default_species(&mut self, default_species: &Rc<RefCell<Species>>) {
         for client_ref in self.clients.get_data() {
             let mut client = client_ref.borrow_mut();
             client.set_species(Rc::clone(default_species));
@@ -110,7 +117,7 @@ impl Species {
         self.score = 0.0; //reset score
     }
 
-    pub(super) fn cull(&mut self, proportion_to_kill: f64, default_species: &Rc<RefCell<Species>>) {
+    pub(super) fn remove_lowest_scoring_clients(&mut self, proportion_to_remove: f64, default_species: &Rc<RefCell<Species>>) {
         if self.clients.size() == 0 {
             return;
         }
@@ -120,7 +127,7 @@ impl Species {
             a.borrow().get_score().partial_cmp(&b.borrow().get_score()).unwrap()
         });
 
-        let number_to_cull: usize = std::cmp::min((self.clients.size() as f64 * proportion_to_kill).ceil() as usize, self.clients.size());
+        let number_to_cull: usize = std::cmp::min((self.clients.size() as f64 * proportion_to_remove).ceil() as usize, self.clients.size());
 
         //remove first x (number to cull) clients
         for i in 0..number_to_cull {

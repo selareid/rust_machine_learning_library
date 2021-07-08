@@ -1,5 +1,5 @@
 use crate::neat::species::Species;
-use std::cell::{RefCell};
+use std::cell::{RefCell, RefMut};
 use crate::neat::client::Client;
 use std::rc::Rc;
 use crate::feed_forward::node_gene::NodeGene;
@@ -145,7 +145,7 @@ impl Neat {
         let client_ref = Rc::new(RefCell::new(client));
 
         //add client to default species
-        self.get_default_species().borrow_mut().force_put(Rc::clone(&client_ref), self.get_default_species());
+        self.put_client_in_default_species(&client_ref);
 
         //add client to clients
         self.clients.insert(String::clone(&name), client_ref);
@@ -170,169 +170,156 @@ impl Neat {
     }
 
     pub fn update_clients(&mut self) {
-        // println!("starting client updates...");
+        let mut score_list: Vec<(String, f64)> = Vec::new();
+        self.evaluate_species_to_score_list(&mut score_list);
+        self.cull_lowest_scored_species_and_remove_empty(&mut score_list);
 
-        /*
-        evaluate species
-        kill low species
-        remove empty species
-        */
-        {
-            let mut score_list: Vec<(String, f64)> = Vec::new();
-
-            //evaluate species
-            for (_key, species_ref) in &self.species {
-                let mut species = species_ref.borrow_mut();
-                species.calculate_score();
-                score_list.push((String::clone(species.get_name()), species.get_score()));
-            }
-
-            score_list.sort_by(|a, b| a.1.partial_cmp(&b.1).unwrap_or(Equal));
-
-            let number_to_kill: usize = std::cmp::min((self.species.len() as f64 * self.proportion_to_kill).round() as usize, self.species.len());
-
-            //kill low bois, yeet empty spec
-            for i in 0..number_to_kill {
-                let name: &String = &score_list.get(i).unwrap().0;
-
-                match self.species.get(name) {
-                    None => panic!("lolwat, this shouldn't happen 231984028"),
-                    Some(species_ref) => {
-                        let ref_copy = Rc::clone(species_ref);
-                        let mut species = ref_copy.borrow_mut();
-                        species.cull(self.proportion_to_kill, &self.get_default_species());
-
-                        if species.size() <= 1 { //remove empty species
-                            species.go_extinct(&self.get_default_species());
-                            self.species.remove(name);
-                        }
-                    }
-                }
-            }
+        if self.species.len() > 0 {
+            self.breed_clients_without_species_into_species();
         }
 
-        /*
-        breed clients (to fill in clients without species)
-            add the client to random species
-            breed from randos in that species
-            coolio
-        */
-        if self.species.len() > 0 { //skip if no species yet
-            {
-                //killed clients - don't have species
-                let mut def_spec = self.default_species.borrow_mut();
-                let clients: &mut RandomHashSet<RefCell<Client>> = def_spec.get_clients_mut();
-                let mut rng = rand::thread_rng();
-
-                //randomly add those clients to a random species
-                // - replaces client's genome with one made from breeding clients in the new species
-                for client in clients.get_data() {
-                    match self.species.values().choose(&mut rng) {
-                        None => panic!("woops, no species - did we kill them all??"),
-                        Some(chosen_species) => {
-                            let mut species = chosen_species.borrow_mut();
-
-                            assert!(species.size() > 0);
-
-                            let new_genome = species.breed_random_clients();
-                            client.borrow_mut().set_genome(Rc::new(RefCell::new(new_genome))); //gives client new genome
-                            species.force_put(Rc::clone(client), Rc::clone(chosen_species)); // add client to the species
-                        }
-                    }
-                }
-
-                clients.clear(); //all the clients have been moved on their end
-            }
-
-            assert_eq!(self.get_default_species().borrow().size(), 0);
-        }
-
-        /*
-            reset clients
-            mutate clients
-            generate new calculators
-
-            clears all species data
-        */
-        {
-            let mut client_names = vec![];
-
-            //when I was directly using the name, got error cause we use &mut self in mutate_random
-            for name in self.clients.keys() {
-                client_names.push(String::clone(name));
-            }
-
-            for name in client_names {
-                let client_ref = Rc::clone(self.get_client_ref(&name));
-
-                self.get_default_species().borrow_mut().force_put(Rc::clone(&client_ref), self.get_default_species());
-
-                let mut client = client_ref.borrow_mut();
-                client.reset_client();
-
-                //mutates genome
-                let genome = client.get_genome();
-                GenomeMutator::mutate_random(self, &mut genome.borrow_mut());
-
-                client.generate_calculator(self.activation_function);
-            }
-
-            self.species.clear();
-        }
-
-        /*
-        sort clients into species
-        */
+        self.reset_clients_mutate_and_generate_calculator();
         self.sort_clients_into_species();
-
-        // println!("finished client updates {:?}", self.species.iter().map(|(a,b)| format!("{} {}", a, b.borrow().size())).collect::<Vec<String>>());
     }
 
-    fn get_client_ref(&self, client_name: &String) -> &Rc<RefCell<Client>> {
-        match self.clients.get(client_name) {
-            None => panic!("Illegal moment, client with name {} does not exist", client_name),
-            Some(client_ref) => client_ref,
+    fn reset_clients_mutate_and_generate_calculator(&mut self) {
+        //copied for self mutable borrow reasons
+        let mut client_names: Vec<String> = self.clients.keys().map(|n| String::clone(n)).collect();
+
+        for name in client_names {
+            let client_ref = Rc::clone(self.get_client_ref(&name));
+            let mut client = client_ref.borrow_mut();
+
+            self.put_client_in_default_species(&client_ref);
+            client.reset_client();
+
+            self.mutate_client_and_update_calculator(&mut client);
+        }
+
+        self.species.clear();
+    }
+
+    fn mutate_client_and_update_calculator(&mut self, client: &mut RefMut<Client>) {
+        let genome = client.get_genome();
+        GenomeMutator::mutate_random(self, &mut genome.borrow_mut());
+        client.generate_calculator(self.activation_function);
+    }
+
+    fn put_client_in_default_species(&mut self, client_ref: &Rc<RefCell<Client>>) {
+        self.get_default_species().borrow_mut().force_put(Rc::clone(&client_ref), self.get_default_species());
+    }
+
+    fn breed_clients_without_species_into_species(&mut self) {
+        let default_spec_ref = self.get_default_species();
+        let mut default_spec = default_spec_ref.borrow_mut();
+        let default_species_clients_list: &mut RandomHashSet<RefCell<Client>> = default_spec.get_clients_mut();
+
+        for client in default_species_clients_list.get_data() {
+            self.put_client_in_random_species(client);
+        }
+
+        default_species_clients_list.clear(); //all clients have changed species
+
+        assert_eq!(self.get_default_species().borrow().size(), 0); //TODO move this to a test
+    }
+
+    fn put_client_in_random_species(&mut self, client: &Rc<RefCell<Client>>) {
+        let species_ref = self.get_random_species_ref();
+        let mut species = species_ref.borrow_mut();
+        species.breed_client_into_species(Rc::clone(client), Rc::clone(species_ref));
+    }
+
+    fn cull_lowest_scored_species_and_remove_empty(&mut self, score_list: &mut Vec<(String, f64)>) {
+        let number_of_species_to_cull: usize = std::cmp::min((self.species.len() as f64 * self.proportion_to_kill).round() as usize, self.species.len());
+        let lowest_x_scored_species_indices = 0..number_of_species_to_cull;
+
+        for i in lowest_x_scored_species_indices {
+            let name: &String = &score_list.get(i).unwrap().0;
+
+            //reference cloned to avoid self mutable borrow error when calling if_empty_remove_species
+            let species_ref = Rc::clone(self.get_species_ref(name));
+
+            let mut species = species_ref.borrow_mut();
+
+            species.remove_lowest_scoring_clients(self.proportion_to_kill, &self.get_default_species());
+            self.if_empty_remove_species(species);
+        }
+    }
+
+    fn evaluate_species_to_score_list(&mut self, score_list: &mut Vec<(String, f64)>) {
+        for (_key, species_ref) in &self.species {
+            let mut species = species_ref.borrow_mut();
+
+            species.calculate_score(); //score
+
+            score_list.push((String::clone(species.get_name()), species.get_score())); //add to score_list
+        }
+
+        score_list.sort_by(|a, b| a.1.partial_cmp(&b.1).unwrap_or(Equal));
+    }
+
+    fn if_empty_remove_species(&mut self, mut species: RefMut<Species>) {
+        let species_is_empty = species.size() <= 1;
+        if species_is_empty {
+            species.go_extinct_move_clients_to_default_species(&self.get_default_species());
+            self.species.remove(species.get_name());
         }
     }
 
     fn sort_clients_into_species(&mut self) {
-        //try add to existing species
+        self.try_add_clients_to_existing_species();
+        self.add_remaining_clients_to_new_species();
+    }
+
+    fn try_add_clients_to_existing_species(&mut self) {
         for (_name, species_ref) in &self.species {
             let ref_for_species_borrow = Rc::clone(&species_ref);
             let mut species = ref_for_species_borrow.borrow_mut();
+
             for (_name, client_ref) in &self.clients {
-                if species.try_add_client(Rc::clone(client_ref), Rc::clone(&species_ref),
-                                          self.get_distance_constants(), self.get_species_distance_threshold()) {
-                    break;
-                }
+                let succeeded = species.try_add_client(Rc::clone(client_ref), Rc::clone(&species_ref),
+                                                       self.get_distance_constants(), self.get_species_distance_threshold());
+                if succeeded { break; }
             }
-        }
-
-        //add the rest of the clients to some new species
-        let mut new_species: Vec<Rc<RefCell<Species>>> = Vec::new();
-
-        'client_loop: for client_ref in self.get_default_species().borrow().get_clients().get_data() {
-            //try add to the existing new species
-            for species in &new_species {
-                if Rc::clone(&species).borrow_mut().try_add_client(Rc::clone(client_ref), Rc::clone(species),
-                                                                   self.get_distance_constants(), self.get_species_distance_threshold()) {
-                    continue 'client_loop;
-                }
-            }
-
-            //otherwise make new species
-            let species = Species::new();
-            assert_eq!(species.size(), 0);
-            let species_ref = Rc::new(RefCell::new(species));
-            //add client to species
-            Rc::clone(&species_ref).borrow_mut().try_add_client(Rc::clone(client_ref), Rc::clone(&species_ref),
-                                                                self.get_distance_constants(), self.get_species_distance_threshold());
-            new_species.push(Rc::clone(&species_ref));
-            self.species.insert(String::clone(Rc::clone(&species_ref).borrow().get_name()), species_ref);
         }
     }
 
-    //generate the base genome (in nodes, out nodes, 
+    fn add_remaining_clients_to_new_species(&mut self) {
+        let mut new_species_list: Vec<Rc<RefCell<Species>>> = Vec::new();
+
+        for client_ref in self.get_default_species().borrow().get_clients().get_data() {
+            let succeeded = self.try_add_to_existing_new_species(&mut new_species_list, client_ref);
+            if succeeded { continue; }
+
+            self.add_client_to_new_species_update_species_lists(&mut new_species_list, client_ref);
+        }
+    }
+
+    fn add_client_to_new_species_update_species_lists(&mut self, new_species_list: &mut Vec<Rc<RefCell<Species>>>, client_ref: &Rc<RefCell<Client>>) {
+        let species = Species::new();
+        let species_ref = Rc::new(RefCell::new(species));
+
+        Rc::clone(&species_ref).borrow_mut().try_add_client(Rc::clone(client_ref), Rc::clone(&species_ref),
+                                                            self.get_distance_constants(), self.get_species_distance_threshold());
+
+        new_species_list.push(Rc::clone(&species_ref));
+        self.species.insert(String::clone(Rc::clone(&species_ref).borrow().get_name()), species_ref);
+    }
+
+    fn try_add_to_existing_new_species(&mut self, new_species: &mut Vec<Rc<RefCell<Species>>>, client_ref: &Rc<RefCell<Client>>) -> bool {
+        let mut succeeded = false;
+
+        new_species.iter().for_each(|species_ref| {
+            if succeeded { return; }
+
+            succeeded = species_ref.borrow_mut().try_add_client(Rc::clone(client_ref), Rc::clone(species_ref),
+                                                                self.get_distance_constants(), self.get_species_distance_threshold());
+        });
+
+        succeeded
+    }
+
+    //generate the base genome (in nodes, out nodes,
     fn get_default_genome(&mut self) -> Genome {
         let mut genome = Genome::new();
 
@@ -464,5 +451,26 @@ impl Neat {
         let genome_ref = client.get_genome();
         let genome = genome_ref.borrow();
         println!("{:?}", genome.connections);
+    }
+
+    fn get_client_ref(&self, client_name: &String) -> &Rc<RefCell<Client>> {
+        match self.clients.get(client_name) {
+            None => panic!("Illegal moment, client with name {} does not exist", client_name),
+            Some(client_ref) => client_ref,
+        }
+    }
+
+    fn get_species_ref(&self, species_name: &String) -> &Rc<RefCell<Species>> {
+        match self.species.get(species_name) {
+            None => panic!("Attempt to get species {} failed. Species does not exist", species_name),
+            Some(species_ref) => species_ref,
+        }
+    }
+
+    fn get_random_species_ref(&self) -> &Rc<RefCell<Species>> {
+        match self.species.values().choose(&mut rand::thread_rng()) {
+            None => panic!("Attempt to get random species, none found"),
+            Some(species_ref) => species_ref,
+        }
     }
 }
