@@ -23,19 +23,18 @@ pub(super) struct Species {
 
 impl Species {
     pub(super) fn new() -> Self {
-        let mut name: String = thread_rng()
-            .sample_iter(&Alphanumeric)
-            .take(30)
-            .map(char::from)
-            .collect();
-        name.insert_str(0, "species_");
-
         Species {
-            name,
+            name: Species::generate_new_name(),
             clients: RandomHashSet::new(),
             score: 0.0,
             representative: None
         }
+    }
+
+    fn generate_new_name() -> String {
+        let mut name: String = thread_rng().sample_iter(&Alphanumeric).take(30).map(char::from).collect();
+        name.insert_str(0, "species_");
+        name
     }
 
     pub(super) fn size(&self) -> usize {
@@ -44,17 +43,28 @@ impl Species {
 
     pub(super) fn try_add_client(&mut self, client: Rc<RefCell<Client>>, species_ref: Rc<RefCell<Species>>, distance_constants: (f64,f64,f64), species_distance_threshold: f64) -> bool {
         if let Some(rep_ref) = &self.representative {
-            if GenomeNeatMethods::distance(&*client.borrow().get_genome().borrow(), &*rep_ref.borrow().get_genome().borrow(), distance_constants) < species_distance_threshold {
+            if Species::client_distance_below_threshold(&client, rep_ref, species_distance_threshold, distance_constants) {
                 self.force_put(client, species_ref);
                 return true;
             }
+
+            return false
         }
-        else { // if no representative, this client becomes rep
-            self.representative = Some(Rc::clone(&client));
-            self.force_put(client, species_ref);
+        else {
+            self.force_new_client_as_rep(client, species_ref);
             return true;
         }
-        false
+    }
+
+    fn client_distance_below_threshold(client: &Rc<RefCell<Client>>, rep_ref: &Rc<RefCell<Client>>, species_distance_threshold: f64, distance_constants: (f64, f64, f64)) -> bool {
+        let clients_distance_to_rep = GenomeNeatMethods::distance(&*client.borrow().get_genome().borrow(), &*rep_ref.borrow().get_genome().borrow(), distance_constants);
+        let below_threshold = clients_distance_to_rep < species_distance_threshold;
+        below_threshold
+    }
+
+    fn force_new_client_as_rep(&mut self, client: Rc<RefCell<Client>>, species_ref: Rc<RefCell<Species>>) {
+        self.representative = Some(Rc::clone(&client));
+        self.force_put(client, species_ref);
     }
 
     //adds client to species and updates client's species
@@ -71,7 +81,7 @@ impl Species {
     }
 
     // MAKE SURE YOU DELETE THE SPECIES AFTER RUNNING THIS
-    pub(super) fn go_extinct_move_clients_to_default_species(&mut self, default_species: &Rc<RefCell<Species>>) {
+    pub(super) fn move_all_clients_to_default_species(&mut self, default_species: &Rc<RefCell<Species>>) {
         for client_ref in self.clients.get_data() {
             let mut client = client_ref.borrow_mut();
             client.set_species(Rc::clone(default_species));
@@ -79,82 +89,69 @@ impl Species {
     }
 
     pub (super) fn calculate_score(&mut self) {
-        let mut total_score: f64 = 0.0;
+        let mut total_score: f64 = self.get_total_client_scores();
+        self.score = if total_score == 0.0 { 0.0 } else { total_score / (self.clients.size() as f64) };
+    }
 
-        for client_ref in self.clients.get_data() {
-            let client = client_ref.borrow();
-            total_score += client.get_score();
-        }
-
-        if total_score == 0.0 {
-            self.score = 0.0;
-        } else {
-            self.score = total_score / (self.clients.size() as f64);
-        }
+    fn get_total_client_scores(&mut self) -> f64 {
+        let mut total_score: f64 = 0_f64;
+        self.clients.get_data().iter().for_each(|client_ref| total_score += client_ref.borrow().get_score());
+        total_score
     }
 
     //removes all clients except one (becomes new rep)
     //also resets score to 0
     pub(super) fn reset(&mut self, default_species: &Rc<RefCell<Species>>) {
-        if let Some(random_client_ref) = self.clients.random_element() {
-            let this_species_ref = Rc::clone(&random_client_ref.borrow().get_species()); //save species reference
+        self.remove_all_clients_except_rep(default_species);
+        self.reset_score();
+    }
 
-            self.representative = Some(Rc::clone(random_client_ref));
+    fn reset_score(&mut self) { self.score = 0.0; }
 
-            for client_ref in self.clients.get_data() {
-                client_ref.borrow_mut().set_species(Rc::clone(default_species)); //reset clients' species
-            }
+    fn remove_all_clients_except_rep(&mut self, default_species: &Rc<RefCell<Species>>) {
+        let random_client_ref = self.get_random_client();
 
+        let this_species_ref = Rc::clone(&random_client_ref.borrow().get_species()); //save species reference
+        let new_representative = Rc::clone(random_client_ref);
 
-            self.clients.clear();
+        self.move_all_clients_to_default_species(default_species);
+        self.clients.clear();
 
-            if let Some(rep_ref) = &self.representative {
-                self.clients.push(Rc::clone(rep_ref)); //add rep back to clients
-                rep_ref.borrow_mut().set_species(this_species_ref); //set rep's species
-            }
-        }
-
-        self.score = 0.0; //reset score
+        self.force_new_client_as_rep(new_representative, this_species_ref);
     }
 
     pub(super) fn remove_lowest_scoring_clients(&mut self, proportion_to_remove: f64, default_species: &Rc<RefCell<Species>>) {
-        if self.clients.size() == 0 {
-            return;
-        }
+        let no_clients = self.clients.size() == 0;
+        if no_clients { return; }
 
-        //sort clients by score, least to greatest
-        self.clients.get_data_mut().sort_by(|a, b| {
-            a.borrow().get_score().partial_cmp(&b.borrow().get_score()).unwrap()
-        });
+        self.sort_clients_by_score_least_to_greatest();
 
         let number_to_cull: usize = std::cmp::min((self.clients.size() as f64 * proportion_to_remove).ceil() as usize, self.clients.size());
+        self.remove_x_lowest_scoring_clients(default_species, number_to_cull)
+    }
 
-        //remove first x (number to cull) clients
-        for i in 0..number_to_cull {
-            if let Some(client_ref) = self.clients.get(0) {
-                self.clients.get_data_mut().remove(0); //remove client from this species
-
-                //reset client's species
-                Rc::clone(default_species).borrow_mut().force_put(client_ref, Rc::clone(default_species));
-            }
+    fn remove_x_lowest_scoring_clients(&mut self, default_species: &Rc<RefCell<Species>>, number_to_remove: usize) {
+        for _i in 0..number_to_remove {
+            self.remove_client_at_index_0(default_species)
         }
     }
 
+    fn remove_client_at_index_0(&mut self, default_species: &Rc<RefCell<Species>>) {
+        if let Some(client_ref) = self.clients.get(0) {
+            self.clients.get_data_mut().remove(0); //remove client from this species
+            Rc::clone(default_species).borrow_mut().force_put(client_ref, Rc::clone(default_species)); //reset client's species to default
+        }
+    }
+
+    fn sort_clients_by_score_least_to_greatest(&mut self) {
+        self.clients.get_data_mut().sort_by(|a, b| {
+            a.borrow().get_score().partial_cmp(&b.borrow().get_score()).unwrap()
+        });
+    }
+
     pub(super) fn breed_random_clients(&self) -> Genome {
-        let mut random_client1_ref: Rc<RefCell<Client>>;
-        let mut random_client2_ref: Rc<RefCell<Client>>;
-
-        if let Some(ran_1) = self.clients.random_element() {
-            random_client1_ref = Rc::clone(ran_1);
-        } else {
-            panic!("Didn't get element");
-        }
-
-        if let Some(ran_2) = self.clients.random_element() {
-            random_client2_ref = Rc::clone(ran_2);
-        } else {
-            panic!("Didn't get element");
-        }
+        let mut random_client1_ref: Rc<RefCell<Client>> = Rc::clone(self.get_random_client());
+        let mut random_client2_ref: Rc<RefCell<Client>> = Rc::clone(self.get_random_client());
 
         let random_client1 = random_client1_ref.borrow();
         let random_client2 = random_client2_ref.borrow();
@@ -172,6 +169,13 @@ impl Species {
 
     pub(super) fn get_clients_mut(&mut self) -> &mut RandomHashSet<RefCell<Client>> {
         &mut self.clients
+    }
+
+    fn get_random_client(&self) -> &Rc<RefCell<Client>> {
+        match self.clients.random_element() {
+            Some(random_client_ref) => random_client_ref,
+            None => panic!("no clients found :("),
+        }
     }
 
     pub(super) fn get_score(&self) -> f64 {
