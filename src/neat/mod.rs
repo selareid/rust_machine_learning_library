@@ -155,7 +155,6 @@ impl Neat {
 
     //run the client's calculator
     pub fn use_client(&self, client_name: &String, inputs: &Vec<f64>) -> Vec<f64> {
-        assert_eq!(inputs.len(), self.num_of_input_nodes-1);
         match self.clients.get(client_name) {
             None => panic!("Illegal moment, client with name {} does not exist", client_name),
             Some(client_ref) => {
