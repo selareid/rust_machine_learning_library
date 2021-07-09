@@ -71,3 +71,62 @@ impl PartialEq for Node {
 }
 
 impl Eq for Node {}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn new_node_empty_with_x() {
+        let x = 99_f64;
+        let node = Node::new(x);
+        assert_eq!(node.connections.size(), 0);
+        assert!(matches!(node.output, None));
+        assert_eq!(node.x, x);
+    }
+
+    #[test]
+    fn get_total_in_from_connections_0_on_new_node() {
+        let node = Node::new(0.5);
+        assert_eq!(node.get_total_in_from_connections(), 0_f64);
+    }
+
+    #[test]
+    fn get_total_in_from_connections_one_connection_expected_output() {
+        let node = Node::new(0.5);
+        todo!();
+    }
+
+    #[test]
+    fn set_output_changes_output() {
+        let mut node = Node::new(0.99);
+        node.set_output(Some(0.11));
+        assert_eq!(node.output, Some(0.11));
+    }
+
+    #[test]
+    fn set_output_none_changes_output_to_none() {
+        let mut node = Node::new(0.99);
+        node.set_output(None);
+        assert_eq!(node.output, None);
+    }
+
+    #[test]
+    fn new_node_ref_with_refcell_from_x_is_empty() {
+        let x = 0.13_f64;
+        let node = Node::new_node_ref_with_refcell_from_x(x);
+        assert_eq!(node.borrow().connections.size(), 0);
+        assert!(matches!(node.borrow().output, None));
+        assert_eq!(node.borrow().x, x);
+    }
+
+    #[test]
+    fn get_activated_output_works_with_identity_function() {
+        todo!();
+    }
+
+    #[test]
+    fn run_node_changes_node_output_as_expected_using_identity_function() {
+        todo!();
+    }
+}
