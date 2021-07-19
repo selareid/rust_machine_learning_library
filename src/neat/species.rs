@@ -16,7 +16,7 @@ use crate::neat::genome_neat::GenomeNeatMethods;
 
 pub(super) struct Species {
     clients: RandomHashSet<RefCell<Client>>,
-    score: f64, //default 0
+    adjusted_fitness: f64, //default 0
     name: String,
     representative: Option<Rc<RefCell<Client>>>
 }
@@ -26,7 +26,7 @@ impl Species {
         Species {
             name: Species::generate_new_name(),
             clients: RandomHashSet::new(),
-            score: 0.0,
+            adjusted_fitness: 0.0,
             representative: None
         }
     }
@@ -90,13 +90,17 @@ impl Species {
 
     pub (super) fn calculate_score(&mut self) {
         let mut total_score: f64 = self.get_total_client_scores();
-        self.score = if total_score == 0.0 { 0.0 } else { total_score / (self.clients.size() as f64) };
+        self.adjusted_fitness = if total_score == 0.0 { 0.0 } else { total_score / (self.clients.size() as f64) };
     }
 
     fn get_total_client_scores(&mut self) -> f64 {
         let mut total_score: f64 = 0_f64;
         self.clients.get_data().iter().for_each(|client_ref| total_score += client_ref.borrow().get_score());
         total_score
+    }
+
+    fn get_target_population_size(&self, adjusted_population_fitness: f64) -> usize {
+        (self.adjusted_fitness / adjusted_population_fitness).floor() as usize
     }
 
     //removes all clients except one (becomes new rep)
@@ -106,7 +110,7 @@ impl Species {
         self.reset_score();
     }
 
-    fn reset_score(&mut self) { self.score = 0.0; }
+    fn reset_score(&mut self) { self.adjusted_fitness = 0.0; }
 
     fn remove_all_clients_except_rep(&mut self, default_species: &Rc<RefCell<Species>>) {
         let random_client_ref = self.get_random_client();
@@ -179,7 +183,7 @@ impl Species {
     }
 
     pub(super) fn get_score(&self) -> f64 {
-        self.score
+        self.adjusted_fitness
     }
 
     fn get_representative(&self) -> Option<Rc<RefCell<Client>>> {
@@ -196,7 +200,7 @@ impl Species {
 
 impl PartialEq for Species {
     fn eq(&self, other: &Self) -> bool {
-        self.name == other.name && self.score == other.score
+        self.name == other.name && self.adjusted_fitness == other.adjusted_fitness
     }
 }
 
