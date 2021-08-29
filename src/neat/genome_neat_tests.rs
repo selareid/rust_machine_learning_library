@@ -22,7 +22,7 @@ fn get_basic_genome_for_test_using_neat(neat: &mut Neat) -> Genome {
             break;
         }
 
-        let node_opt = neat.get_node_by_inv_num(inv_num);
+        let node_opt = neat.find_node_from_innovation_number(inv_num);
 
         match node_opt {
             None => break,
@@ -39,7 +39,7 @@ fn get_basic_genome_for_test_using_neat(neat: &mut Neat) -> Genome {
 
     //generate connections
     for i in 1..neat.num_of_input_nodes {
-        let out_node_opt = neat.get_node_by_inv_num(neat.node_bank.len()-i);
+        let out_node_opt = neat.find_node_from_innovation_number(neat.node_bank.len()-i);
 
         match out_node_opt {
             None => break,
@@ -48,9 +48,9 @@ fn get_basic_genome_for_test_using_neat(neat: &mut Neat) -> Genome {
                     break
                 }
 
-                let in_node = neat.get_node_by_inv_num(i).unwrap();
+                let in_node = neat.find_node_from_innovation_number(i).unwrap();
 
-                let mut con = ConnectionGene::new(neat.get_connection_number_from_nodes(in_node.get_innovation_number(), out_node.get_innovation_number()), in_node, out_node);
+                let mut con = ConnectionGene::new(neat.find_connection_num_from_its_nodes(in_node.get_innovation_number(), out_node.get_innovation_number()), in_node, out_node);
 
                 con.weight = weights[con.get_innovation_number() % weights.len()];
 

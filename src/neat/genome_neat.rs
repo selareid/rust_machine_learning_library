@@ -15,7 +15,7 @@ impl GenomeNeatMethods {
         let g0: &Genome;
         let g1: &Genome;
 
-        if genome0.connections.len() > genome1.connections.len() {
+        if genome0.connections.keys().max() > genome1.connections.keys().max() {
             g0 = genome0;
             g1 = genome1;
         } else {
@@ -176,7 +176,7 @@ impl GenomeMutator {
                     con.enabled = false;
                 }
 
-                let (new_con0, new_con1, new_node) = neat.get_replacement_for_connection(con);
+                let (new_con0, new_con1, new_node) = neat.find_replacement_data_for_connection(con);
 
                 genome.add_connection(new_con0);
                 genome.add_connection(new_con1);
@@ -204,9 +204,9 @@ impl GenomeMutator {
                 } else {
                     //set node0 to node with higher key, and node1 to other
                     if let (Some(node0), Some(node1))
-                      = (neat.get_node_by_inv_num(*if a_node1 < a_node2 { a_node1 } else { a_node2 }), neat.get_node_by_inv_num(*if a_node1 > a_node2 { a_node1 } else { a_node2 })) {
+                      = (neat.find_node_from_innovation_number(*if a_node1 < a_node2 { a_node1 } else { a_node2 }), neat.find_node_from_innovation_number(*if a_node1 > a_node2 { a_node1 } else { a_node2 })) {
                         if node0.get_x() < node1.get_x() {
-                            let con_inv_num = neat.get_connection_number_from_nodes(node0.get_innovation_number(), node1.get_innovation_number());
+                            let con_inv_num = neat.find_connection_num_from_its_nodes(node0.get_innovation_number(), node1.get_innovation_number());
                             if genome.connections.contains_key(&con_inv_num) {
                                 true
                             } else {
