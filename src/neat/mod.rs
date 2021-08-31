@@ -163,7 +163,7 @@ impl Neat {
     pub fn update_clients(&mut self) {
         self.evaluate_population();
         self.adjust_species_populations();
-        self.mutate_genomes_and_recheck_species()
+        self.mutate_genomes_and_recheck_species();
     }
 
     fn mutate_genomes_and_recheck_species(&mut self) {

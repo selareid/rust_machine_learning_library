@@ -154,7 +154,7 @@ impl Species {
         self.kill_x_lowest_scoring_clients(number_to_cull)
     }
 
-    pub(super) fn kill_x_lowest_scoring_clients(&mut self, number_to_remove: usize) -> Vec<Rc<RefCell<Client>>>{
+    pub(super) fn kill_x_lowest_scoring_clients(&mut self, number_to_remove: usize) -> Vec<Rc<RefCell<Client>>> {
         self.sort_clients_by_score_least_to_greatest();
 
         let mut clients_to_kill: Vec<Rc<RefCell<Client>>> = Vec::default();
