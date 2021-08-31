@@ -69,7 +69,7 @@ impl<T> RandomHashSet<T> where
 
     //Returns a new copy of the reference counter to the requested object
     pub fn get(&self, index: usize) -> Option<Rc<T>> {
-        if index > self.data.len() {
+        if index >= self.data.len() {
             None
         } else {
             Some(Rc::clone(self.data.get(index).unwrap()))
