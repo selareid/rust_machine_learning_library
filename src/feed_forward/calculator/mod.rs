@@ -11,6 +11,7 @@ use crate::feed_forward::genome::Genome;
 pub(crate) mod connection;
 pub(crate) mod node;
 
+#[derive(Debug)]
 pub(crate) struct Calculator<F> where
     F: Fn(f64) -> f64 {
     input_nodes: Vec<Rc<RefCell<Node>>>,

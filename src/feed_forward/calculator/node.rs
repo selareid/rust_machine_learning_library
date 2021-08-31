@@ -4,6 +4,7 @@ use std::cmp::Ordering;
 use std::rc::Rc;
 use std::cell::RefCell;
 
+#[derive(Debug)]
 pub struct Node {
     pub(super) connections: RandomHashSet<Connection>,
     pub(super) output: Option<f64>,

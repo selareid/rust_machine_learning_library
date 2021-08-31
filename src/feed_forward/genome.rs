@@ -4,6 +4,8 @@ use super::gene::Gene;
 use std::rc::Rc;
 use std::collections::HashMap;
 
+#[derive(Debug)]
+#[derive(Default)]
 pub struct Genome {
     pub(crate) connections: HashMap<usize, ConnectionGene>, //connections with same inv_num need to share to/from nodes
     pub(crate) nodes: HashMap<usize, Rc<NodeGene>>, //nodes with same inv_num need to be exact same node (to maintain x,y values) - not Rc as a node's values are constant

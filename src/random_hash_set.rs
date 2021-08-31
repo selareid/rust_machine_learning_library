@@ -7,6 +7,9 @@ pub(crate) enum HashSetRemoveTypes<T> where
     Index(usize),
 }
 
+#[derive(Debug)]
+#[derive(Default)]
+#[derive(Eq, PartialEq)]
 pub(crate) struct RandomHashSet<T> where
     T: Eq, {
     data: Vec<Rc<T>>,

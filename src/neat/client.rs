@@ -12,6 +12,8 @@ Holds genome,
  calculator,
  score
  */
+#[derive(Debug)]
+#[derive(Default)]
 pub struct Client {
     name: String,
     genome: Rc<RefCell<Genome>>,
