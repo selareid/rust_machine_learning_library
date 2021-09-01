@@ -43,20 +43,20 @@ impl Species {
         self.clients.size()
     }
 
-    pub(super) fn try_add_client(&mut self, client: Rc<RefCell<Client>>, species_ref: Rc<RefCell<Species>>, distance_constants: (f64,f64,f64), species_distance_threshold: f64) -> bool {
-        if let Some(rep_ref) = &self.representative {
-            if self.check_client_compatibility(&client, species_distance_threshold, distance_constants) {
-                self.force_add_client(client, species_ref);
-                return true;
-            }
-
-            return false
-        }
-        else {
-            self.force_new_client_as_rep(client, species_ref);
-            return true;
-        }
-    }
+    // pub(super) fn try_add_client(&mut self, client: Rc<RefCell<Client>>, species_ref: Rc<RefCell<Species>>, distance_constants: (f64,f64,f64), species_distance_threshold: f64) -> bool {
+    //     if let Some(rep_ref) = &self.representative {
+    //         if self.check_client_compatibility(&client, species_distance_threshold, distance_constants) {
+    //             self.force_add_client(client, species_ref);
+    //             return true;
+    //         }
+    //
+    //         return false
+    //     }
+    //     else {
+    //         self.force_new_client_as_rep(client, species_ref);
+    //         return true;
+    //     }
+    // }
 
     pub(super) fn get_representatives_genome_rc(&self) -> Rc<RefCell<Genome>> {
         if let Some(representatives_reference) = &self.representative {
@@ -97,23 +97,20 @@ impl Species {
         self.force_add_client(client, species_ref);
     }
 
-    // MAKE SURE YOU DELETE THE SPECIES AFTER RUNNING THIS
-    pub(super) fn move_all_clients_to_default_species(&mut self, default_species: &Rc<RefCell<Species>>) {
-        for client_ref in self.clients.get_data() {
-            let mut client = client_ref.borrow_mut();
-            client.set_species(Rc::clone(default_species));
-        }
-    }
+    // pub(super) fn breed_client_into_species(&mut self, client: Rc<RefCell<Client>>, species_ref: Rc<RefCell<Species>>) {
+    //     let new_genome_ref = Rc::new(RefCell::new(self.breed_random_clients()));
+    //     client.borrow_mut().set_genome(new_genome_ref);
+    //
+    //     self.force_add_client(client, species_ref);
+    // }
 
-    pub (super) fn calculate_fitnesses(&mut self) {
-        self.calculate_fitness();
-        self.calculate_adjusted_fitness();
-    }
-
-    //assumes (non-adjusted) fitness is already calculated
-    fn calculate_adjusted_fitness(&mut self) {
-        self.adjusted_fitness = if self.fitness == 0.0 { 0.0 } else { self.fitness / (self.clients.size() as f64) };
-    }
+    // // MAKE SURE YOU DELETE THE SPECIES AFTER RUNNING THIS
+    // pub(super) fn move_all_clients_to_default_species(&mut self, default_species: &Rc<RefCell<Species>>) {
+    //     for client_ref in self.clients.get_data() {
+    //         let mut client = client_ref.borrow_mut();
+    //         client.set_species(Rc::clone(default_species));
+    //     }
+    // }
 
     fn calculate_fitness(&mut self) {
         let mut total_score: f64 = 0_f64;
@@ -127,18 +124,32 @@ impl Species {
 
     //removes all clients except one (becomes new rep)
     //also resets score to 0
-    pub(super) fn reset(&mut self, default_species: &Rc<RefCell<Species>>) {
-        self.remove_all_clients_except_rep(default_species);
-        self.reset_score();
-    }
+    // pub(super) fn reset(&mut self, default_species: &Rc<RefCell<Species>>) {
+    //     self.remove_all_clients_except_rep(default_species);
+    //     self.reset_score();
+    // }
 
-    fn reset_score(&mut self) { self.adjusted_fitness = 0.0; self.fitness = 0.0;}
+    // fn reset_score(&mut self) { self.adjusted_fitness = 0.0; self.fitness = 0.0;}
 
-    fn remove_all_clients_except_rep(&mut self, default_species: &Rc<RefCell<Species>>) {
-        let random_client_ref = self.get_random_client();
+    // fn remove_all_clients_except_rep(&mut self, default_species: &Rc<RefCell<Species>>) {
+    //     let random_client_ref = self.get_random_client();
+    //
+    //     let this_species_ref = Rc::clone(&random_client_ref.borrow().get_species()); //save species reference
+    //     let new_representative = Rc::clone(random_client_ref);
+    //
+    //     self.move_all_clients_to_default_species(default_species);
+    //     self.clients.clear();
+    //
+    //     self.force_new_client_as_rep(new_representative, this_species_ref);
+    // }
 
-        let this_species_ref = Rc::clone(&random_client_ref.borrow().get_species()); //save species reference
-        let new_representative = Rc::clone(random_client_ref);
+    // pub(super) fn kill_lowest_scoring_clients(&mut self, proportion_to_remove: f64) -> Vec<Rc<RefCell<Client>>> {
+    //     let no_clients = self.clients.size() == 0;
+    //     if no_clients { return Vec::default(); }
+    //
+    //     let number_to_cull: usize = std::cmp::min((self.clients.size() as f64 * proportion_to_remove).ceil() as usize, self.clients.size());
+    //     self.kill_x_lowest_scoring_clients(number_to_cull)
+    // }
 
         self.move_all_clients_to_default_species(default_species);
         self.clients.clear();
