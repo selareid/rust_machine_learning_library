@@ -137,7 +137,15 @@ impl Neat {
         let name = String::clone(client.get_name());
         let client_ref = Rc::new(RefCell::new(client));
 
-        clients_species.borrow_mut().force_add_client_without_updating_clients_species(Rc::clone(&client_ref));
+        //we don't update client cause already set
+        let mut c_species = clients_species.borrow_mut();
+        if let None = c_species.get_representative() { //set as rep if no rep
+            c_species.force_new_client_as_rep_without_updating_client_species(Rc::clone(&client_ref));
+        }
+        else {
+            c_species.force_add_client_without_updating_clients_species(Rc::clone(&client_ref));
+        }
+
         self.clients.insert(String::clone(&name), client_ref); //add client to clients
 
         name
@@ -193,7 +201,12 @@ impl Neat {
                 client.set_species(Rc::clone(&chosen_species_ref));
 
                 let mut chosen_species = chosen_species_ref.borrow_mut();
-                chosen_species.force_add_client_without_updating_clients_species(Rc::clone(&client_ref));
+                if let None = chosen_species.get_representative() { //if no rep (new species) set as rep
+                    chosen_species.force_new_client_as_rep_without_updating_client_species(Rc::clone(&client_ref));
+                }
+                else {
+                    chosen_species.force_add_client_without_updating_clients_species(Rc::clone(&client_ref));
+                }
             }
         }
     }

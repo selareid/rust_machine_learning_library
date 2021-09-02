@@ -89,9 +89,14 @@ impl Species {
         self.force_add_client_without_updating_clients_species(client);
     }
 
-    fn force_new_client_as_rep(&mut self, client: Rc<RefCell<Client>>, species_ref: Rc<RefCell<Species>>) {
+    pub(super) fn force_new_client_as_rep(&mut self, client: Rc<RefCell<Client>>, species_ref: Rc<RefCell<Species>>) {
         self.representative = Some(Rc::clone(&client));
         self.force_add_client(client, species_ref);
+    }
+
+    pub(super) fn force_new_client_as_rep_without_updating_client_species(&mut self, client: Rc<RefCell<Client>>) {
+        self.representative = Some(Rc::clone(&client));
+        self.force_add_client_without_updating_clients_species(client);
     }
 
     // pub(super) fn breed_client_into_species(&mut self, client: Rc<RefCell<Client>>, species_ref: Rc<RefCell<Species>>) {
@@ -232,7 +237,7 @@ impl Species {
         self.adjusted_fitness
     }
 
-    fn get_representative(&self) -> Option<Rc<RefCell<Client>>> {
+    pub(super) fn get_representative(&self) -> Option<Rc<RefCell<Client>>> {
         match &self.representative {
             Some(x) => Some(Rc::clone(x)), // return clone of the reference held
             None => None
@@ -367,6 +372,34 @@ mod species_tests {
         let rep_rc: &Rc<RefCell<Client>> = match &s.representative { Some(rc) => rc, _ => panic!("no representative set") };
 
         assert!(Rc::ptr_eq(rep_rc, &c_ref), "representative is not client as expected");
+    }
+
+    #[test]
+    fn force_new_client_as_rep_without_updating_client_species_sets_new_client_as_representative() {
+        let s_ref = Rc::new(RefCell::new(Species::new()));
+        let mut s = s_ref.borrow_mut();
+
+        let c: Client = Client::new(Default::default(), Default::default());
+        let c_ref = Rc::new(RefCell::new(c));
+
+        s.force_new_client_as_rep_without_updating_client_species(Rc::clone(&c_ref));
+
+        let rep_rc: &Rc<RefCell<Client>> = match &s.representative { Some(rc) => rc, _ => panic!("no representative set") };
+
+        assert!(Rc::ptr_eq(rep_rc, &c_ref), "representative is not client as expected");
+    }
+
+    #[test]
+    fn force_new_client_as_rep_without_updating_client_species_doesnt_update_clients_species() {
+        let s_ref = Rc::new(RefCell::new(Species::new()));
+        let mut s = s_ref.borrow_mut();
+
+        let c: Client = Client::new(Default::default(), Default::default());
+        let c_ref = Rc::new(RefCell::new(c));
+
+        s.force_new_client_as_rep_without_updating_client_species(Rc::clone(&c_ref));
+
+        assert!(!Rc::ptr_eq(&s_ref, &c_ref.borrow().get_species()));
     }
 
     #[test]
