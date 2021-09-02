@@ -428,3 +428,35 @@ impl Neat {
         species_ref
     }
 }
+
+#[cfg(test)]
+mod neat_tests {
+    use super::*;
+    use crate::activation_functions::ActivationFunctions;
+
+    fn default_neat() -> Neat {
+        Neat {
+            species: Default::default(),
+            clients: Default::default(),
+            adjusted_population_fitness: 0.0,
+            activation_function: ActivationFunctions::identity,
+            species_distance_threshold: 0.0,
+            proportion_to_kill: 0.0,
+            mutate_chance_add_node: 0,
+            mutate_chance_add_connection: 0,
+            mutate_chance_random_weight: 0,
+            mutate_chance_weight_shift: 0,
+            mutate_chance_toggle_connection: 0,
+            distance_constants: (0.0, 0.0, 0.0),
+            random_weight_max: 0.0,
+            random_weight_shift_max: 0.0,
+            max_mutation_attempts: 0,
+            node_bank: Default::default(),
+            nodes_to_connection_map: Default::default(),
+            connection_to_replacement_node_map: Default::default(),
+            num_of_input_nodes: 0,
+            num_of_output_nodes: 0,
+            cached_rng: Default::default()
+        }
+    }
+}
