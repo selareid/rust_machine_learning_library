@@ -257,7 +257,6 @@ impl Eq for Species {}
 #[cfg(test)]
 mod species_tests {
     use super::*;
-    use std::panic::panic_any;
 
     #[test]
     fn new_species_defaults_as_expected() {
