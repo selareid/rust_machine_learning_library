@@ -22,6 +22,7 @@ mod genome_neat;
 everything
  */
 
+#[derive(Debug)]
 pub struct Neat {
     species: HashMap<String, Rc<RefCell<Species>>>, //does not include default_species
     clients: HashMap<String, Rc<RefCell<Client>>>,
