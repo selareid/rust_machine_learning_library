@@ -377,6 +377,10 @@ impl Neat {
         self.clients.len()
     }
 
+    pub fn get_client_names(&self) -> Vec<String> {
+        self.clients.keys().map(|n| String::clone(n)).collect::<Vec<String>>()
+    }
+
     pub fn display_genome(&self, client_name: &String) {
         let client = self.get_client_ref(client_name).borrow();
         let genome_ref = client.get_genome();
@@ -471,5 +475,22 @@ mod neat_tests {
             num_of_output_nodes: 0,
             cached_rng: Default::default()
         }
+    }
+
+    #[test]
+    fn get_client_names_returns_vector_with_names_of_all_clients() {
+        let mut n = default_neat();
+        println!("{}", n.species.len());
+        let mut names: Vec<String> = Default::default();
+
+        for i in 0..50 {
+            names.push(n.new_client());
+        }
+
+        let returned_names = n.get_client_names();
+
+        //check equivalence
+        assert!(returned_names.iter().all(|n| names.contains(n)));
+        assert!(names.iter().all(|n| returned_names.contains(n)));
     }
 }
