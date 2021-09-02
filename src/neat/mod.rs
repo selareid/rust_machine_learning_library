@@ -12,8 +12,6 @@ use rand::rngs::ThreadRng;
 use rand::prelude::IteratorRandom;
 
 #[cfg(test)]
-mod tests;
-#[cfg(test)]
 mod genome_neat_tests;
 
 mod client;
