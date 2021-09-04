@@ -349,26 +349,6 @@ impl Neat {
         }
     }
 
-    fn get_distance_constants(&self) -> (f64,f64,f64) {
-        self.distance_constants //maybe move this to a constant file or something idk
-    }
-
-    fn get_species_distance_threshold(&self) -> f64 {
-        self.species_distance_threshold
-    }
-
-    fn get_random_weight_max(&self) -> f64 {
-        self.random_weight_max
-    }
-
-    fn get_random_weight_shift_max(&self) -> f64 {
-        self.random_weight_shift_max
-    }
-
-    fn get_max_mutation_attempts(&self) -> u64 {
-        self.max_mutation_attempts
-    }
-
     pub fn get_number_of_species(&self) -> usize {
         self.species.len()
     }
@@ -402,12 +382,6 @@ impl Neat {
         }
     }
 
-    fn get_random_species_ref(&self) -> &Rc<RefCell<Species>> {
-        match self.species.values().choose(&mut rand::thread_rng()) {
-            None => panic!("Attempt to get random species, none found"),
-            Some(species_ref) => species_ref,
-        }
-    }
     fn create_and_add_x_new_clients_for_species(&mut self, number_of_new_clients: usize, species_ref: Rc<RefCell<Species>>) {
         let mut species = species_ref.borrow_mut();
 

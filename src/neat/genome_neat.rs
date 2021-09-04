@@ -193,7 +193,7 @@ impl GenomeMutator {
 
         while {
             i += 1;
-            if i > neat.get_max_mutation_attempts() {
+            if i > neat.max_mutation_attempts {
                 return false;
             }
 
@@ -211,7 +211,7 @@ impl GenomeMutator {
                                 true
                             } else {
                                 let mut connection = neat.new_connection(con_inv_num, node0.get_innovation_number(), node1.get_innovation_number());
-                                connection.weight = neat.cached_rng.gen_range(-(1.0 * neat.get_random_weight_max())..(1.0 * neat.get_random_weight_max()));
+                                connection.weight = neat.cached_rng.gen_range(-(1.0 * neat.random_weight_max)..(1.0 * neat.random_weight_max));
 
                                 genome.add_connection(connection);
                                 return true;
@@ -239,7 +239,7 @@ impl GenomeMutator {
         //scuffed do/while (the stuff is in the while's expression)
         while {
             i += 1;
-            if i > neat.get_max_mutation_attempts() {
+            if i > neat.max_mutation_attempts {
                 return false;
             }
 
@@ -248,7 +248,7 @@ impl GenomeMutator {
                 let con_key = &con_key.clone(); //because we borrow .connections as immutable then mutable so we need to drop the immutable reference
                 if let Some(connection) = genome.connections.get_mut(con_key) {
                     if connection.enabled {
-                        connection.weight = neat.cached_rng.gen_range(-(1.0 * neat.get_random_weight_max())..(1.0 * neat.get_random_weight_max()));
+                        connection.weight = neat.cached_rng.gen_range(-(1.0 * neat.random_weight_max)..(1.0 * neat.random_weight_max));
                         return true;
                     } else {
                         true
@@ -270,7 +270,7 @@ impl GenomeMutator {
         //scuffed do/while (the stuff is in the while's expression)
         while {
             i += 1;
-            if i > neat.get_max_mutation_attempts() {
+            if i > neat.max_mutation_attempts {
                 return false
             }
 
@@ -280,7 +280,7 @@ impl GenomeMutator {
                 if let Some(connection) = genome.connections.get_mut(con_key) {
                     if connection.enabled {
                         //randomly shift weight
-                        connection.weight += neat.cached_rng.gen_range(-(1.0 * neat.get_random_weight_shift_max())..(1.0 * neat.get_random_weight_shift_max()));
+                        connection.weight += neat.cached_rng.gen_range(-(1.0 * neat.random_weight_shift_max)..(1.0 * neat.random_weight_shift_max));
                         return true;
                     }
                     else {
