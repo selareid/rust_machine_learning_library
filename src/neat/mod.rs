@@ -398,22 +398,32 @@ impl Neat {
         species.force_add_client_without_updating_clients_species(Rc::clone(&client_ref));
         self.clients.insert(client_name, client_ref)
     }
-    fn get_species_for_genome(&mut self, genome: &Genome) -> Rc<RefCell<Species>> {
-        if self.species.len() > 0 { //find species for genome
 
-            for (_name, species_ref) in self.species.iter() {
-                let species = species_ref.borrow();
-                if species.check_genome_compatibility(genome, self.species_distance_threshold, self.distance_constants) {
-                    return Rc::clone(&species_ref);
-                }
+    fn get_species_for_genome(&mut self, genome: &Genome) -> Rc<RefCell<Species>> {
+        match self.try_find_existing_species_for_genome(genome) {
+            Some(species_ref) => species_ref,
+            None => self.get_new_species_added_to_species()
+        }
+    }
+
+    fn try_find_existing_species_for_genome(&mut self, genome: &Genome) -> Option<Rc<RefCell<Species>>> {
+        for (_name, species_ref) in self.species.iter() {
+            let species = species_ref.borrow();
+            if species.check_genome_compatibility(genome, self.species_distance_threshold, self.distance_constants) {
+                return Some(Rc::clone(&species_ref))
             }
         }
 
-        //no species found
+        None //no species found
+    }
+
+    fn get_new_species_added_to_species(&mut self) -> Rc<RefCell<Species>> {
+        //create new species
         let species = Species::new();
         let species_name = String::clone(species.get_name());
         let species_ref = Rc::new(RefCell::new(species));
 
+        //add to self.species
         self.species.insert(species_name, Rc::clone(&species_ref));
 
         species_ref
