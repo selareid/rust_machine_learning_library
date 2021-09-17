@@ -177,51 +177,59 @@ impl Neat {
         let client_rcs: Vec<Rc<RefCell<Client>>> = self.clients.iter().map(|(_k, client_ref)| Rc::clone(client_ref)).collect();
 
         for client_ref in client_rcs {
-            let mut client = client_ref.borrow_mut();
-
-            self.mutate_client_and_update_calculator(&mut client);
-            //self.give_all_clients_new_genomes_via_in_species_breeding(); //TODO
-todo!();
-            //recheck species
-            //is client in correct species
-            //if yes, continue
-            //if no, put in correct species
-
-            let client_species_ref = client.get_species();
-
-            let mut client_species_mut = client_species_ref.borrow_mut();
-
-            let is_representative_of_species = match &client_species_mut.get_representative() {
-                Some(rep_ref) => Rc::ptr_eq(rep_ref, &client_ref),
-                None => false,
-            };
-
-            let compatible_with_current_species = is_representative_of_species || client_species_mut.check_client_compatibility(&client, self.species_distance_threshold, self.distance_constants);
-
-            if !compatible_with_current_species {
-                //remove from current species
-                client_species_mut.remove_client(Rc::clone(&client_ref));
-                drop(client_species_mut);
-
-                //add client to some other species
-                let chosen_species_ref = self.get_species_for_genome(&client.get_genome().borrow());
-                client.set_species(Rc::clone(&chosen_species_ref));
-
-                let mut chosen_species = chosen_species_ref.borrow_mut();
-                if let None = chosen_species.get_representative() { //if no rep (new species) set as rep
-                    chosen_species.force_new_client_as_rep_without_updating_client_species(Rc::clone(&client_ref));
-                }
-                else {
-                    chosen_species.force_add_client_without_updating_clients_species(Rc::clone(&client_ref));
-                }
-            }
+            self.mutate_client_and_update_calculator(&client_ref);
+            self.give_client_new_genome_from_species_breeding();
+            self.ensure_client_in_correct_species(&client_ref)
         }
     }
 
-    fn mutate_client_and_update_calculator(&mut self, client: &mut RefMut<Client>) {
+    fn mutate_client_and_update_calculator(&mut self, client_ref: &Rc<RefCell<Client>>) {
+        let cloned_client_ref = Rc::clone(client_ref);
+        let mut client: RefMut<Client> = cloned_client_ref.borrow_mut();
         let genome = client.get_genome();
         GenomeMutator::mutate_random(self, &mut genome.borrow_mut());
         client.generate_calculator(self.activation_function);
+    }
+
+    fn give_client_new_genome_from_species_breeding(&mut self) {
+        // todo!()
+    }
+
+    fn ensure_client_in_correct_species(&mut self, client_ref: &Rc<RefCell<Client>>) {
+        //=====Recheck Species=====
+        //is client in correct species
+        //if yes, continue
+        //if no, put in correct species
+
+        let cloned_client_ref = Rc::clone(client_ref);
+        let mut client: RefMut<Client> = cloned_client_ref.borrow_mut();
+        let client_species_ref = client.get_species();
+
+        let mut client_species_mut = client_species_ref.borrow_mut();
+
+        let is_representative_of_species = match &client_species_mut.get_representative() {
+            Some(rep_ref) => Rc::ptr_eq(rep_ref, &client_ref),
+            None => false,
+        };
+
+        let compatible_with_current_species = is_representative_of_species || client_species_mut.check_client_compatibility(&client, self.species_distance_threshold, self.distance_constants);
+
+        if !compatible_with_current_species {
+            //remove from current species
+            client_species_mut.remove_client(Rc::clone(&client_ref));
+            drop(client_species_mut);
+
+            //add client to some other species
+            let chosen_species_ref = self.get_species_for_genome(&client.get_genome().borrow());
+            client.set_species(Rc::clone(&chosen_species_ref));
+
+            let mut chosen_species = chosen_species_ref.borrow_mut();
+            if let None = chosen_species.get_representative() { //if no rep (new species) set as rep
+                chosen_species.force_new_client_as_rep_without_updating_client_species(Rc::clone(&client_ref));
+            } else {
+                chosen_species.force_add_client_without_updating_clients_species(Rc::clone(&client_ref));
+            }
+        }
     }
 
     fn evaluate_population(&mut self) { //evaluates population as a whole and each species individually
