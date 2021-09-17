@@ -131,7 +131,7 @@ impl Species {
     }
 
     pub(super) fn get_target_population_size(&self, adjusted_population_fitness: f64) -> usize {
-        (self.adjusted_fitness / adjusted_population_fitness).round() as usize
+        if adjusted_population_fitness == 0_f64 {self.get_size()} else {(self.get_size() as f64 * self.adjusted_fitness / adjusted_population_fitness).round() as usize}
     }
 
     //removes all clients except one (becomes new rep)
