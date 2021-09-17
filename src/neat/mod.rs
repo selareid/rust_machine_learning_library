@@ -188,13 +188,19 @@ impl Neat {
 
             let client_species_ref = client.get_species();
 
-            let client_species = client_species_ref.borrow();
-            let compatible_with_current_species = client_species.check_client_compatibility(&Rc::clone(&client_ref), self.species_distance_threshold, self.distance_constants);
+            let mut client_species_mut = client_species_ref.borrow_mut();
+
+            let is_representative_of_species = match &client_species_mut.get_representative() {
+                Some(rep_ref) => Rc::ptr_eq(rep_ref, &client_ref),
+                None => false,
+            };
+
+            let compatible_with_current_species = is_representative_of_species || client_species_mut.check_client_compatibility(&client, self.species_distance_threshold, self.distance_constants);
 
             if !compatible_with_current_species {
                 //remove from current species
-                let mut client_species_mut = client_species_ref.borrow_mut();
                 client_species_mut.remove_client(Rc::clone(&client_ref));
+                drop(client_species_mut);
 
                 //add client to some other species
                 let chosen_species_ref = self.get_species_for_genome(&client.get_genome().borrow());
@@ -239,11 +245,12 @@ impl Neat {
             let species_size = species.get_size();
             let target_population = species.get_target_population_size(self.adjusted_population_fitness);
 
-            if target_population > species_size {
-                let lowest_scoring_clients: Vec<Rc<RefCell<Client>>> = species.kill_x_lowest_scoring_clients(target_population - species_size);
+            if species_size > target_population {
+                let lowest_scoring_clients: Vec<Rc<RefCell<Client>>> = species.kill_x_lowest_scoring_clients(species_size-target_population);
                 self.kill_clients(lowest_scoring_clients)
-            } else if target_population < species_size {
-                self.create_and_add_x_new_clients_for_species(species_size - target_population, Rc::clone(&species_ref));
+            } else if species_size < target_population {
+                drop(species);
+                self.create_and_add_x_new_clients_for_species(target_population-species_size, Rc::clone(&species_ref));
             }
         }
     }

@@ -75,8 +75,8 @@ impl Species {
     }
 
     //no test written
-    pub(super) fn check_client_compatibility(&self, client: &Rc<RefCell<Client>>, species_distance_threshold: f64, distance_constants: (f64, f64, f64)) -> bool {
-        self.check_genome_compatibility(&*client.borrow().get_genome().borrow(), species_distance_threshold, distance_constants)
+    pub(super) fn check_client_compatibility(&self, client: &Client, species_distance_threshold: f64, distance_constants: (f64, f64, f64)) -> bool {
+        self.check_genome_compatibility(&*client.get_genome().borrow(), species_distance_threshold, distance_constants)
     }
 
     pub(super) fn force_add_client_without_updating_clients_species(&mut self, client: Rc<RefCell<Client>>) {
