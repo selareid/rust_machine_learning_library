@@ -180,7 +180,8 @@ impl Neat {
             let mut client = client_ref.borrow_mut();
 
             self.mutate_client_and_update_calculator(&mut client);
-
+            //self.give_all_clients_new_genomes_via_in_species_breeding(); //TODO
+todo!();
             //recheck species
             //is client in correct species
             //if yes, continue
