@@ -177,8 +177,8 @@ impl Neat {
         let client_rcs: Vec<Rc<RefCell<Client>>> = self.clients.iter().map(|(_k, client_ref)| Rc::clone(client_ref)).collect();
 
         for client_ref in client_rcs {
+            self.give_client_new_genome_from_species_breeding(&client_ref);
             self.mutate_client_and_update_calculator(&client_ref);
-            self.give_client_new_genome_from_species_breeding();
             self.ensure_client_in_correct_species(&client_ref)
         }
     }
@@ -190,8 +190,14 @@ impl Neat {
         client.generate_calculator(self.activation_function);
     }
 
-    fn give_client_new_genome_from_species_breeding(&mut self) {
-        // todo!()
+    fn give_client_new_genome_from_species_breeding(&mut self, client_ref: &Rc<RefCell<Client>>) {
+        let client = client_ref.borrow(); //immutable in case breed function uses this client
+        let species_ref = client.get_species();
+        let species = species_ref.borrow_mut();
+
+        let new_genome = species.breed_random_clients();
+        drop(client); // drop immutable borrow
+        client_ref.borrow_mut().set_genome(Rc::new(RefCell::new(new_genome)));
     }
 
     fn ensure_client_in_correct_species(&mut self, client_ref: &Rc<RefCell<Client>>) {
