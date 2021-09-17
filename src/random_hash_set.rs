@@ -23,7 +23,7 @@ impl<T> RandomHashSet<T> where
 
     pub fn contains(&self, object: &Rc<T>) -> bool {
         for x in &self.data {
-            if x == object || Rc::ptr_eq(object, x) {
+            if Rc::ptr_eq(object, x) {
                 return true;
             }
         }
@@ -93,7 +93,7 @@ impl<T> RandomHashSet<T> where
             HashSetRemoveTypes::Object(object) => {
                 for index in 0..self.data.len()-1 {
                     if let Some(indexed_object) = self.data.get(index) {
-                        if indexed_object == &object {
+                        if Rc::ptr_eq(indexed_object, &object) {
                             self.data.remove(index);
                             return true;
                         }
