@@ -184,8 +184,7 @@ impl Neat {
     }
 
     fn mutate_client_and_update_calculator(&mut self, client_ref: &Rc<RefCell<Client>>) {
-        let cloned_client_ref = Rc::clone(client_ref);
-        let mut client: RefMut<Client> = cloned_client_ref.borrow_mut();
+        let mut client: RefMut<Client> = client_ref.borrow_mut();
         let genome = client.get_genome();
         GenomeMutator::mutate_random(self, &mut genome.borrow_mut());
         client.generate_calculator(self.activation_function);
@@ -201,8 +200,7 @@ impl Neat {
         //if yes, continue
         //if no, put in correct species
 
-        let cloned_client_ref = Rc::clone(client_ref);
-        let mut client: RefMut<Client> = cloned_client_ref.borrow_mut();
+        let mut client: RefMut<Client> = client_ref.borrow_mut();
         let client_species_ref = client.get_species();
 
         let mut client_species_mut = client_species_ref.borrow_mut();
