@@ -602,7 +602,7 @@ mod species_tests {
         }
     }
 
-    #[test]
+    #[test]  //this test could be split up
     fn kill_x_lowest_scoring_clients_kills_clients_as_expected() {
         // checks that there are x clients killed with less score that any other client remaining alive
         // after running the method
@@ -613,6 +613,7 @@ mod species_tests {
 
         let mut s: Species = Species::new();
 
+        //create and add clients
         for i in 0..client_scores.len() {
             let client_score = client_scores[i];
             let mut c: Client = Client::new(Default::default(), Default::default());
@@ -624,6 +625,9 @@ mod species_tests {
 
         s.kill_x_lowest_scoring_clients(x_to_kill);
 
+        assert_eq!(s.get_size(), clients.len()-x_to_kill);
+
+        //check living clients are the highest scoring ones
         while s.get_size() > 0 {
             if let Some(client_at_0_r) = s.kill_client_at_index_0() {
                 let mut this_client_i: usize = 0;
